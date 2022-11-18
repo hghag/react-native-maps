@@ -310,6 +310,9 @@ id regionAsJSON(MKCoordinateRegion region) {
   [self overrideGestureRecognizersForView:mapView];
 
   if (!_didCallOnMapReady && self.onMapReady) {
+    if(self.zoomTapEnabled == NO){
+        [self toggleGesture:@"handleZoomTapGesture:" toggle:self.zoomTapEnabled];
+    }
     self.onMapReady(@{});
     _didCallOnMapReady = true;
   }
@@ -465,22 +468,10 @@ id regionAsJSON(MKCoordinateRegion region) {
 }
 
 - (void)setZoomTapEnabled:(BOOL)zoomTapEnabled {
-    _zoomTapEnabled = zoomTapEnabled;
-    
-    UIView* mapView = [self valueForKey:@"mapView"]; //GMSVectorMapView
-    NSArray* grs = mapView.gestureRecognizers;
-    for (UIGestureRecognizer* gestureRecognizer in grs) {
-        //get original handlers
-        NSArray* origTargets = [gestureRecognizer valueForKey:@"targets"];
-        for (NSObject* trg in origTargets) {
-            NSObject* target = [trg valueForKey:@"target"];
-            SEL action = [self getActionForTarget:trg];
-            if ([NSStringFromSelector(action) isEqualToString:@"handleZoomTapGesture:"]) {
-                [gestureRecognizer setEnabled:zoomTapEnabled];
-                continue;
-            }
-        }
+    if(_zoomTapEnabled != zoomTapEnabled){
+        [self toggleGesture:@"handleZoomTapGesture:" toggle:zoomTapEnabled];
     }
+    _zoomTapEnabled = zoomTapEnabled;
 }
 
 - (BOOL)zoomTapEnabled {
@@ -692,7 +683,17 @@ id regionAsJSON(MKCoordinateRegion region) {
         if([self.origGestureRecognizersMeta objectForKey:grHash] != nil)
             continue; //already patched
 
+        //get original handlers
+        NSArray* origTargets = [gestureRecognizer valueForKey:@"targets"];
         NSMutableArray* origTargetsActions = [[NSMutableArray alloc] init];
+        for (NSObject* trg in origTargets) {
+            NSObject* target = [trg valueForKey:@"target"];
+            SEL action = [self getActionForTarget:trg];
+            [origTargetsActions addObject:@{
+                                            @"target": [NSValue valueWithNonretainedObject:target],
+                                            @"action": NSStringFromSelector(action)
+                                            }];
+        }
 
         //replace with extendedMapGestureHandler
         for (NSDictionary* origTargetAction in origTargetsActions) {
@@ -963,6 +964,24 @@ id regionAsJSON(MKCoordinateRegion region) {
     });
 }
 
+-(void)toggleGesture:(NSString*)gesture toggle:(BOOL)toggle {
+    UIView* mapView = [self valueForKey:@"mapView"]; //GMSVectorMapView
+    
+    NSArray* grs = mapView.gestureRecognizers;
+    for (UIGestureRecognizer* gestureRecognizer in grs) {
+        NSNumber* grHash = [NSNumber numberWithUnsignedInteger:gestureRecognizer.hash];
+        NSDictionary* origMeta = [self.origGestureRecognizersMeta objectForKey:grHash];
+        NSDictionary* origTargets = [origMeta objectForKey:@"targets"];
+        for (NSDictionary* origTarget in origTargets) {
+            NSString* actionString = [origTarget objectForKey:@"action"];
+
+            if([actionString isEqualToString:gesture]){
+                [gestureRecognizer setEnabled:toggle];
+                continue;
+            }
+        }
+    }
+}
 
 @end
 
