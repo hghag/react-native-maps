@@ -577,6 +577,15 @@ export type MapViewProps = ViewProps & {
   showsUserLocation?: boolean;
 
   /**
+   * If `false` Double tapped then slide to zoom is disabled.
+   *
+   * @default true
+   * @platform iOS: Google Maps only
+   * @platform Android: Not Supported
+   */
+  tapDragEnabled?: boolean;
+
+  /**
    * Sets the tint color of the map. (Changes the color of the position indicator)
    *
    * @default System Blue

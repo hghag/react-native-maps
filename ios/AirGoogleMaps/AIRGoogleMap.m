@@ -67,6 +67,7 @@ id regionAsJSON(MKCoordinateRegion region) {
   BOOL _didLayoutSubviews;
   BOOL _didPrepareMap;
   BOOL _didCallOnMapReady;
+  BOOL _tapDragEnabled;
   BOOL _zoomTapEnabled;
 }
 
@@ -90,6 +91,7 @@ id regionAsJSON(MKCoordinateRegion region) {
     _didLayoutSubviews = false;
     _didPrepareMap = false;
     _didCallOnMapReady = false;
+    _tapDragEnabled = YES;
     _zoomTapEnabled = YES;
 
     // Listen to the myLocation property of GMSMapView.
@@ -310,9 +312,12 @@ id regionAsJSON(MKCoordinateRegion region) {
   [self overrideGestureRecognizersForView:mapView];
 
   if (!_didCallOnMapReady && self.onMapReady) {
-    if(self.zoomTapEnabled == NO){
-        [self toggleGesture:@"handleZoomTapGesture:" toggle:self.zoomTapEnabled];
-    }
+      if(self.zoomTapEnabled == NO){
+          [self toggleGesture:@"handleZoomTapGesture:" toggle:self.zoomTapEnabled];
+      }
+      if(self.tapDragEnabled == NO){
+          [self toggleGesture:@"handleTapDragGesture:" toggle:self.tapDragEnabled];
+      }
     self.onMapReady(@{});
     _didCallOnMapReady = true;
   }
@@ -476,6 +481,17 @@ id regionAsJSON(MKCoordinateRegion region) {
 
 - (BOOL)zoomTapEnabled {
     return _zoomTapEnabled;
+}
+
+- (void)setTapDragEnabled:(BOOL)tapDragEnabled {
+    if(_tapDragEnabled != tapDragEnabled){
+        [self toggleGesture:@"handleTapDragGesture:" toggle:tapDragEnabled];
+    }
+    _tapDragEnabled = tapDragEnabled;
+}
+
+- (BOOL)tapDragEnabled {
+    return _tapDragEnabled;
 }
 
 - (void)setRotateEnabled:(BOOL)rotateEnabled {
