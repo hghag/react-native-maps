@@ -69,6 +69,7 @@ id regionAsJSON(MKCoordinateRegion region) {
   BOOL _didCallOnMapReady;
   BOOL _tapDragEnabled;
   BOOL _zoomTapEnabled;
+  NSMutableDictionary* _gestures;
 }
 
 - (instancetype)init
@@ -93,6 +94,18 @@ id regionAsJSON(MKCoordinateRegion region) {
     _didCallOnMapReady = false;
     _tapDragEnabled = YES;
     _zoomTapEnabled = YES;
+    _gestures = [NSMutableDictionary dictionaryWithSharedKeySet: [NSDictionary sharedKeySetForKeys:@[
+        @"handleTouchMonitor:",
+        @"handlePanGesture:",
+        @"handleTiltGesture:",
+        @"handlePinchGesture:",
+        @"handleRotateGesture:",
+        @"handleZoomTapGesture:",
+        @"handleSingleTapGesture:",
+        @"handleLongPressGesture:",
+        @"handleTapDragGesture:",
+        @"handleDragGesture:",
+    ]]];
 
     // Listen to the myLocation property of GMSMapView.
     [self addObserver:self
@@ -982,6 +995,11 @@ id regionAsJSON(MKCoordinateRegion region) {
 
 -(void)toggleGesture:(NSString*)gesture toggle:(BOOL)toggle {
     UIView* mapView = [self valueForKey:@"mapView"]; //GMSVectorMapView
+
+    if(toggle){
+      [mapView addGestureRecognizer:_gestures[gesture]];
+      return;
+    }
     
     NSArray* grs = mapView.gestureRecognizers;
     for (UIGestureRecognizer* gestureRecognizer in grs) {
@@ -992,8 +1010,9 @@ id regionAsJSON(MKCoordinateRegion region) {
             NSString* actionString = [origTarget objectForKey:@"action"];
 
             if([actionString isEqualToString:gesture]){
-                [gestureRecognizer setEnabled:toggle];
-                continue;
+                _gestures[gesture] = gestureRecognizer;
+                [mapView removeGestureRecognizer:gestureRecognizer];
+                break;
             }
         }
     }
