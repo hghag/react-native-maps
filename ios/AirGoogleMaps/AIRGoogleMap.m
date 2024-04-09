@@ -67,6 +67,7 @@ id regionAsJSON(MKCoordinateRegion region) {
   BOOL _didLayoutSubviews;
   BOOL _didPrepareMap;
   BOOL _didCallOnMapReady;
+  BOOL _tapDragEnabled;
   BOOL _zoomTapEnabled;
   NSString* _googleMapId;
 }
@@ -100,6 +101,7 @@ id regionAsJSON(MKCoordinateRegion region) {
     _didLayoutSubviews = false;
     _didPrepareMap = false;
     _didCallOnMapReady = false;
+    _tapDragEnabled = YES;
     _zoomTapEnabled = YES;
 
     // Listen to the myLocation property of GMSMapView.
@@ -483,6 +485,14 @@ id regionAsJSON(MKCoordinateRegion region) {
   return self.settings.allowScrollGesturesDuringRotateOrZoom;
 }
 
+- (void)setTapDragEnabled:(BOOL)tapDragEnabled {
+    _tapDragEnabled = tapDragEnabled;
+}
+
+- (BOOL)tapDragEnabled {
+    return _tapDragEnabled;
+}
+
 - (void)setZoomTapEnabled:(BOOL)zoomTapEnabled {
     _zoomTapEnabled = zoomTapEnabled;
 }
@@ -727,16 +737,22 @@ id regionAsJSON(MKCoordinateRegion region) {
         NSArray* origTargets = [gestureRecognizer valueForKey:@"targets"];
         NSMutableArray* origTargetsActions = [[NSMutableArray alloc] init];
         BOOL isZoomTapGesture = NO;
+        BOOL isTapDragGesture = NO;
         for (NSObject* trg in origTargets) {
             NSObject* target = [trg valueForKey:@"target"];
             SEL action = [self getActionForTarget:trg];
             isZoomTapGesture = [NSStringFromSelector(action) isEqualToString:@"handleZoomTapGesture:"];
+            isTapDragGesture = [NSStringFromSelector(action) isEqualToString:@"handleTapDragGesture:"];
             [origTargetsActions addObject:@{
                                             @"target": [NSValue valueWithNonretainedObject:target],
                                             @"action": NSStringFromSelector(action)
                                             }];
         }
         if (isZoomTapGesture && self.zoomTapEnabled == NO) {
+            [view removeGestureRecognizer:gestureRecognizer];
+            continue;
+        }
+        if (isTapDragGesture && self.tapDragEnabled == NO) {
             [view removeGestureRecognizer:gestureRecognizer];
             continue;
         }
